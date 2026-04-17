@@ -1,0 +1,342 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { motion, AnimatePresence } from "motion/react";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
+import { MapPin, Plus, Filter, AlertCircle, User, Menu, X, RefreshCw, Layers } from "lucide-react";
+import { incidentTypes } from "../components/IncidentTypeSelector";
+import { WeatherWidget } from "../components/WeatherWidget";
+import { NotificationBell } from "../components/NotificationBell";
+import { NewsSection } from "../components/NewsSection";
+import { CityServicesFilter } from "../components/CityServicesFilter";
+
+// Mock data de reportes
+const mockReports = [
+  {
+    id: "1",
+    type: "Luminaria dañada",
+    typeId: "luminaria",
+    location: "Calle 5 con Carrera 3",
+    lat: 3.8801,
+    lng: -77.0320,
+    status: "pendiente" as const,
+    date: "10 Mar 2026",
+  },
+  {
+    id: "2",
+    type: "Basura en vía pública",
+    typeId: "basura",
+    location: "Av. Simón Bolívar",
+    lat: 3.8821,
+    lng: -77.0340,
+    status: "en-revision" as const,
+    date: "11 Mar 2026",
+  },
+  {
+    id: "3",
+    type: "Semáforo dañado",
+    typeId: "semaforo",
+    location: "Carrera 2 con Calle 10",
+    lat: 3.8791,
+    lng: -77.0310,
+    status: "solucionado" as const,
+    date: "09 Mar 2026",
+  },
+];
+
+export function MapPage() {
+  const navigate = useNavigate();
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showNews, setShowNews] = useState(false);
+  const [showServices, setShowServices] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const filteredReports = selectedFilter
+    ? mockReports.filter((r) => r.typeId === selectedFilter)
+    : mockReports;
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Weather Widget */}
+      <WeatherWidget />
+
+      {/* Header */}
+      <header className="bg-white shadow-sm z-10">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <motion.div
+              whileHover={{ rotate: 360 }}
+              transition={{ duration: 0.5 }}
+              className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-green-600 rounded-lg flex items-center justify-center"
+            >
+              <MapPin className="w-5 h-5 text-white" />
+            </motion.div>
+            <span className="font-bold text-gray-900 hidden sm:inline">Buenaventura Reporta</span>
+          </Link>
+          
+          <div className="flex items-center gap-2">
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+              <button
+                onClick={handleRefresh}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <motion.div
+                  animate={{ rotate: isRefreshing ? 360 : 0 }}
+                  transition={{ duration: 1, repeat: isRefreshing ? Infinity : 0, ease: "linear" }}
+                >
+                  <RefreshCw className="w-5 h-5 text-gray-700" />
+                </motion.div>
+              </button>
+            </motion.div>
+
+            <NotificationBell />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filtros
+            </Button>
+
+            <Button
+              variant={showServices ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => {
+                setShowServices(!showServices);
+                setShowNews(false);
+              }}
+            >
+              <Layers className="w-4 h-4 mr-2" />
+              Servicios
+            </Button>
+            
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 hover:bg-gray-100 rounded-lg md:hidden"
+            >
+              {showMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            <div className="hidden md:flex items-center gap-2">
+              <Link to="/profile">
+                <Button variant="ghost" size="sm">
+                  <User className="w-4 h-4 mr-2" />
+                  Mi perfil
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {showMenu && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-gray-200 overflow-hidden md:hidden"
+            >
+              <div className="p-4">
+                <Link to="/profile" className="block py-2">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <User className="w-4 h-4 mr-2" />
+                    Mi perfil
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-gray-200 overflow-hidden"
+            >
+              <div className="p-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">Filtrar por tipo de incidencia:</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={selectedFilter === null ? "primary" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedFilter(null)}
+                  >
+                    Todas
+                  </Button>
+                  {incidentTypes.map((type) => (
+                    <Button
+                      key={type.id}
+                      variant={selectedFilter === type.id ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedFilter(type.id)}
+                    >
+                      {type.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* News Section Toggle */}
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-gradient-to-r from-yellow-500 to-green-600 text-white px-4 py-2 flex items-center justify-center gap-2 cursor-pointer hover:from-yellow-600 hover:to-green-700 transition-colors"
+        onClick={() => {
+          setShowNews(!showNews);
+          setShowServices(false);
+        }}
+      >
+        <span className="text-sm font-medium">
+          {showNews ? "Ocultar noticias" : "Ver noticias de la ciudad"}
+        </span>
+      </motion.div>
+
+      {/* News/Services Content */}
+      <AnimatePresence>
+        {(showNews || showServices) && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-white border-b border-gray-200 overflow-hidden"
+          >
+            <div className="max-w-7xl mx-auto px-4 py-6">
+              {showNews && <NewsSection />}
+              {showServices && <CityServicesFilter />}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Map Area */}
+        <div className="flex-1 relative bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center p-8">
+              <MapPin className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <p className="text-gray-600 mb-2">Vista de mapa interactivo</p>
+              <p className="text-sm text-gray-500">
+                Aquí se integrará un mapa con marcadores de incidencias
+                <br />
+                (Leaflet, Mapbox o Google Maps)
+              </p>
+            </div>
+          </div>
+
+          {/* Map Markers Representation */}
+          <div className="absolute inset-0 pointer-events-none">
+            {filteredReports.map((report, index) => (
+              <div
+                key={report.id}
+                className="absolute pointer-events-auto"
+                style={{
+                  left: `${20 + index * 25}%`,
+                  top: `${30 + index * 15}%`,
+                }}
+              >
+                <button
+                  onClick={() => navigate(`/report/${report.id}`)}
+                  className="relative group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full shadow-lg flex items-center justify-center border-4 border-white hover:scale-110 transition-transform">
+                    <MapPin className="w-5 h-5 text-white" />
+                  </div>
+                  <Card className="absolute left-12 top-0 w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <p className="font-medium text-sm">{report.type}</p>
+                    <p className="text-xs text-gray-600">{report.location}</p>
+                  </Card>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Emergency Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute bottom-24 md:bottom-6 right-20 md:right-24 w-14 h-14 bg-red-600 rounded-full shadow-xl flex items-center justify-center hover:bg-red-700 transition-colors"
+          >
+            <AlertCircle className="w-7 h-7 text-white" />
+          </motion.button>
+
+          {/* Floating Action Button */}
+          <Link to="/report/new">
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-yellow-500 to-green-600 rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl transition-all"
+            >
+              <Plus className="w-7 h-7 text-white" />
+            </motion.button>
+          </Link>
+        </div>
+
+        {/* Reports List (Desktop Sidebar) */}
+        <div className="w-full md:w-96 bg-white border-t md:border-t-0 md:border-l border-gray-200 overflow-y-auto">
+          <div className="p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">
+              Reportes recientes ({filteredReports.length})
+            </h3>
+            <div className="space-y-3">
+              {filteredReports.map((report) => {
+                const statusVariant = {
+                  pendiente: "warning" as const,
+                  "en-revision": "info" as const,
+                  solucionado: "success" as const,
+                };
+
+                const statusLabel = {
+                  pendiente: "Pendiente",
+                  "en-revision": "En Revisión",
+                  solucionado: "Solucionado",
+                };
+
+                return (
+                  <Card
+                    key={report.id}
+                    hover
+                    onClick={() => navigate(`/report/${report.id}`)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">{report.type}</h4>
+                      <Badge variant={statusVariant[report.status]}>
+                        {statusLabel[report.status]}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 flex items-center gap-1 mb-1">
+                      <MapPin className="w-3 h-3" />
+                      {report.location}
+                    </p>
+                    <p className="text-xs text-gray-500">{report.date}</p>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
